@@ -47,7 +47,7 @@ import { useNavigation } from '@react-navigation/native'
         }
         const handleButtonPress = () => {
           handleSubmit();
-          navigation.navigate('AvailableRidesScreen'); // Replace 'TargetScreen' with your actual screen
+          navigation.navigate('RideAvailableScreen'); // Replace 'TargetScreen' with your actual screen
         };
         const handleSubmit = () => {
               // Here you can handle what to do with the seatsAvailable value

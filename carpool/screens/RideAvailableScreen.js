@@ -1,36 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native'; 
 import tw from 'tailwind-react-native-classnames';
 
-// Sample Ride Card Component
-const RideCard = ({ ride }) => (
-  <View style={styles.card}>
-    <Text style={styles.title}>From: {ride.from}</Text>
-    <Text style={styles.details}>To: {ride.to}</Text>
-    <Text style={styles.details}>Date: {ride.date}</Text>
-    <Text style={styles.details}>Time: {ride.time}</Text>
-    <Text style={styles.details}>Available Seats: {ride.seatsAvailable}</Text>
-  </View>
-);
+const RideCard = ({ ride }) => {
+  const navigation = useNavigation();
 
-// Main Component to List Rides
-const AvailableRidesScreen = () => {
+  return (
+    <TouchableOpacity onPress={() => navigation.navigate('RideDetailsScreen', { ride })}>
+      <View style={styles.card}>
+        <Text style={styles.title}>From: {String(ride.from)}</Text>
+        <Text style={styles.details}>To: {String(ride.to)}</Text>
+        <Text style={styles.details}>Date: {String(ride.date)}</Text>
+        <Text style={styles.details}>Time: {String(ride.time)}</Text>
+        <Text style={styles.details}>Available Seats: {String(ride.seatsAvailable)}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const RideAvailableScreen = () => {
   const [rides, setRides] = useState([]);
 
-  // Simulate fetching ride data
   useEffect(() => {
-    // Replace this with real API call or data fetching logic
     const fetchRides = async () => {
-      // Simulated data
       const rideData = [
         { id: '1', from: 'New York', to: 'Boston', date: '2024-10-08', time: '10:00 AM', seatsAvailable: 3 },
         { id: '2', from: 'Los Angeles', to: 'San Francisco', date: '2024-10-09', time: '2:30 PM', seatsAvailable: 2 },
-        { id: '3', from: 'New York', to: 'Boston', date: '2024-10-08', time: '10:00 AM', seatsAvailable: 3 },
+        { id: '3', from: 'New York', to: 'Boston', date: '2024-10-08', time: '10:00 AM', seatsAvailable: 5 },
         { id: '4', from: 'Los Angeles', to: 'San Francisco', date: '2024-10-09', time: '2:30 PM', seatsAvailable: 2 },
         { id: '5', from: 'New York', to: 'Boston', date: '2024-10-08', time: '10:00 AM', seatsAvailable: 3 },
-        { id: '6', from: 'Los Angeles', to: 'San Francisco', date: '2024-10-09', time: '2:30 PM', seatsAvailable: 2 },
-        { id: '7', from: 'New York', to: 'Boston', date: '2024-10-08', time: '10:00 AM', seatsAvailable: 3 },
-        { id: '8', from: 'Los Angeles', to: 'San Francisco', date: '2024-10-09', time: '2:30 PM', seatsAvailable: 2 },
+        { id: '6', from: 'Los Angeles', to: 'San Francisco', date: '2024-10-09', time: '2:30 PM', seatsAvailable: 1 },
       ];
       setRides(rideData);
     };
@@ -40,7 +40,6 @@ const AvailableRidesScreen = () => {
 
   return (
     <View style={tw`p-5`}>
-      {/* Conditionally render rides or 'No Rides Available' */}
       {rides.length > 0 ? (
         <FlatList
           data={rides}
@@ -78,4 +77,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AvailableRidesScreen;
+export default RideAvailableScreen;
