@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
 import tw from 'tailwind-react-native-classnames';
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
 
 const SignUpScreen = () => {
   const [email, setEmail] = useState('');
@@ -10,7 +11,7 @@ const SignUpScreen = () => {
   const navigation = useNavigation(); // For navigation to other screens
 
   // Function to handle sign up
-  const handleSignUp = () => {
+  const handleSignUp = async() => {
     // Basic validation
     if (!email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
@@ -21,10 +22,21 @@ const SignUpScreen = () => {
       return;
     }
 
-    // Mock successful sign-up (this would be where you make an API call)
-    Alert.alert('Success', 'You have successfully signed up!');
-    // Navigate back to Sign In screen after sign-up
-    navigation.navigate('SignInScreen');
+    try {
+      const response = await axios.post('http://192.168.1.48:5000/users/signup', {
+        email,
+        password,
+      });
+      Alert.alert('Success', response.data.message);
+      navigation.navigate('SignInScreen'); // Navigate to SignInScreen
+    } catch (error) {
+      Alert.alert('Error', error.response?.data?.error || 'Something went wrong!');
+      // Alert.alert('Success', '#########################');
+    }
+    // // Mock successful sign-up (this would be where you make an API call)
+    // Alert.alert('Success', 'You have successfully signed up!');
+    // // Navigate back to Sign In screen after sign-up
+    // navigation.navigate('SignInScreen');
   };
 
   return (

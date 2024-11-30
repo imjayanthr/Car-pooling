@@ -1,12 +1,12 @@
 from flask import Flask, request, jsonify
 import sqlite3
-
+from flask_cors import CORS
 #used for hasing the password using this werkzeug.security module(sha256)
 from werkzeug.security import generate_password_hash, check_password_hash 
 
 
 app = Flask(__name__)
-
+CORS(app)
 # Database connection function
 def get_db_connection():
     conn = sqlite3.connect('carpooling.db')
@@ -24,29 +24,55 @@ def index():
 
 @app.route('/users/signup', methods=['POST'])
 def signup():
+    # data = request.get_json()
+    # # name = data.get('name')
+    # email = data.get('email')
+    # password = data.get('password')
+    # # phone_number = data.get('phone_number')
+
+    # # Hash the password for security
+    # # hashed_password = generate_password_hash(password, method='sha256')
+    # hashed_password = generate_password_hash(password, method='scrypt')
+
+
+    # conn = get_db_connection()
+    # cursor = conn.cursor()
+    
+    # try:
+       
+    #     # cursor.execute('''INSERT INTO Users (name, email, password, phone_number)
+    #     cursor.execute('''INSERT INTO Users (email, password)
+    #                       VALUES (?, ?)''', (email, hashed_password))
+    #     conn.commit()
+    # except sqlite3.IntegrityError:
+    #     conn.close()
+    #     return jsonify({"error": "Email or phone number already exists"}), 400
+    
+    # conn.close()
+    # return jsonify({"message": "User created successfully!"}), 201
     data = request.get_json()
-    name = data.get('name')
     email = data.get('email')
     password = data.get('password')
-    phone_number = data.get('phone_number')
 
-    # Hash the password for security
-    hashed_password = generate_password_hash(password, method='sha256')
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    # Hash the password
+    hashed_password = generate_password_hash(password, method='scrypt')
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    try:
-        cursor.execute('''INSERT INTO Users (name, email, password, phone_number)
-                          VALUES (?, ?, ?, ?)''', (name, email, hashed_password, phone_number))
-        conn.commit()
-    except sqlite3.IntegrityError:
-        conn.close()
-        return jsonify({"error": "Email or phone number already exists"}), 400
-    
-    conn.close()
-    return jsonify({"message": "User created successfully!"}), 201
 
+    try:
+        cursor.execute('INSERT INTO Users (email, password) VALUES (?, ?)', (email, hashed_password))
+        conn.commit()
+    except sqlite3.IntegrityError as e:
+        conn.close()
+        return jsonify({"error": "Email already exists", "details": str(e)}), 400
+    finally:
+        conn.close()
+
+    return jsonify({"message": "User created successfully!"}), 201
 
 #user signin endpoint   curl -X POST http://127.0.0.1:5000/users/signin -H "Content-Type: application/json" -d "{\"email\":\"abc@gmail.com\",\"password\":\"asd23\"}"
 @app.route('/users/signin',methods=['POST'])
@@ -64,7 +90,7 @@ def signin():
     if user is None or not check_password_hash(user['password'], password):
         return jsonify({"error": "Invalid email or password"}), 401
     
-    return jsonify({"message": f"Welcome {user['name']}!"}), 200
+    return jsonify({"message": f"Welcome {user['name']}!","user_id": user['user_id'] }), 200
 
 
 #go to '/users' to see all users
@@ -175,10 +201,10 @@ def delete_user(userid):
 def create_ride():
     data = request.get_json()
     user_id = data.get('user_id')
-    origin = data.get('origin')
+    origin = data.get('source')
     destination = data.get('destination')
-    departure_time = data.get('departure_time')
-    available_seats = data.get('available_seats')
+    departure_time = data.get('time')
+    available_seats = data.get('seats_available')
     price = data.get('price')
 
     conn = get_db_connection()
@@ -422,4 +448,4 @@ def get_all_rides_booked_by_user(user_id):
 
 # Run the Flask app
 if __name__ == '__main__':
-    app.run(debug=True)
+   app.run(host="0.0.0.0", port=5000, debug=True)

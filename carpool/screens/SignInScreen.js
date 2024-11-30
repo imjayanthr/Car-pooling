@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
 import tw from 'tailwind-react-native-classnames';
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SignInScreen = () => {
   const [email, setEmail] = useState('');
@@ -9,16 +11,51 @@ const SignInScreen = () => {
   const navigation = useNavigation(); // For navigation to other screens after sign-in
 
   // Mock function to simulate sign-in validation
-  const handleSignIn = () => {
-    if (email === 'test' && password === '123') {
-      Alert.alert('Success', 'You have successfully logged in!');
-      // Navigate to another screen after successful login
-      navigation.navigate('HomeScreen');
-    } else {
-      Alert.alert('Error', 'Invalid email or password');
+  // const handleSignIn = async () => {
+  //   if (!email || !password) {
+  //     Alert.alert('Error', 'Please fill in all fields');
+  //     return;
+  //   }
+  
+  //   // API call to log in user
+  //   try {
+  //     const response = await axios.post('http://192.168.1.48:5000//users/signin', {
+  //       email,
+  //       password,
+  //     });
+  //     Alert.alert('Success', response.data.message);
+  //     navigation.navigate('HomeScreen'); // Navigate to HomeScreen
+  //   } catch (error) {
+  //     Alert.alert('Error', error.response?.data?.error || 'Invalid email or password');
+  //   }
+  //   // if (email === 'test' && password === '123') {
+  //   //   Alert.alert('Success', 'You have successfully logged in!');
+  //   //   // Navigate to another screen after successful login
+  //   //   navigation.navigate('HomeScreen');
+  //   // } else {
+  //   //   Alert.alert('Error', 'Invalid email or password');
+  //   // }
+  // };
+
+  const handleSignIn = async () => {
+    try {
+      const response = await axios.post('http://192.168.1.48:5000/users/signin', {
+        email,
+        password,
+      });
+      console.log(response.data); 
+      const userId = response.data.user_id; // Get the user ID from the response
+      await AsyncStorage.setItem('user_id', userId.toString()); // Store it in AsyncStorage
+      Alert.alert('Success', 'Signed in successfully!');
+      navigation.navigate('HomeScreen'); // Navigate to the home screen
+    } catch (error) {
+      console.log('Error:', error); // Log the full error object
+      console.log('Error Response:', error.response?.data); // Log response from server
+      
+      Alert.alert('Error', error.response?.data?.error || 'Something went wrong!');
     }
   };
-
+  
   return (
     <View style={tw`p-10 justify-center`}>
       <Text style={styles.title}>Sign In</Text>
