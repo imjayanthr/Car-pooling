@@ -10,10 +10,10 @@ cursor = conn.cursor()
 cursor.execute('''
 CREATE TABLE Users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
+    name TEXT ,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
-    phone_number INTEGER UNIQUE NOT NULL,
+    phone_number INTEGER UNIQUE,
     license_number TEXT UNIQUE ,
     vehicle_type TEXT ,
     vehicle_model TEXT ,
@@ -30,7 +30,7 @@ CREATE TABLE Rides (
     destination TEXT NOT NULL,
     departure_time DATETIME NOT NULL,
     available_seats INTEGER NOT NULL,
-    price REAL NOT NULL,
+    price REAL ,
     FOREIGN KEY(user_id) REFERENCES Users(user_id)
 );
 ''')

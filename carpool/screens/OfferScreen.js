@@ -5,6 +5,11 @@ import React, { useState } from 'react';
 import tw from 'tailwind-react-native-classnames';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+
 
 const OfferScreen = () => {
   // States for date and time
@@ -15,6 +20,7 @@ const OfferScreen = () => {
   const [seatsAvailable, setSeatsAvailable] = useState(''); // State to store the number of seats
   const [source,setsource]=useState("");
   const [destination,setdestination]=useState("");
+  const navigation = useNavigation(); // For navigation to other screens
 
   const onChangeDate = (event, selectedDate) => {
     const currentDate = selectedDate || date;
@@ -42,14 +48,48 @@ const OfferScreen = () => {
   const handleSetDestination = (input) => {
     setdestination(input);
   }
-  const handleSubmit = () => {
-        // Here you can handle what to do with the seatsAvailable value
-        console.log('From :', source);
-        console.log('To :', destination);
-        console.log('Available seats :', seatsAvailable);
-        console.log("date:",date.toLocaleDateString('en-US'));
-        console.log("time:",time.toLocaleTimeString('en-US'));
+  // const handleSubmit = () => {
+  //       // Here you can handle what to do with the seatsAvailable value
+  //       console.log('From :', source);
+  //       console.log('To :', destination);
+  //       console.log('Available seats :', seatsAvailable);
+  //       console.log("date:",date.toLocaleDateString('en-US'));
+  //       console.log("time:",time.toLocaleTimeString('en-US'));
+  // };
+
+  const handleSubmit = async () => {
+    console.log('Submit button clicked'); // Log function execution
+    try {
+      const userId = await AsyncStorage.getItem('user_id');
+      console.log('Retrieved user ID:', userId); // Log user ID retrieval
+  
+      if (!userId) {
+        Alert.alert('Error', 'User not signed in!');
+        return;
+      }
+  
+      const rideData = {
+        user_id: parseInt(userId, 10),
+        source,
+        destination,
+        date: date.toISOString().split('T')[0],
+        time: time.toTimeString().split(' ')[0],
+        seats_available: parseInt(seatsAvailable, 10),
+      };
+  
+      console.log('Ride data to be sent:', rideData); // Log ride data
+  
+      const response = await axios.post('http://192.168.1.48:5000/rides', rideData);
+      console.log('API Response:', response.data); // Log API response
+      Alert.alert('Success', response.data.message);
+      navigation.navigate('HomeScreen');
+    } catch (error) {
+      console.error('Error Response:', error.response?.data || error.message); // Log error
+      Alert.alert('Error', error.response?.data?.error || 'Something went wrong!');
+    }
   };
+  
+
   return (
     <View>
       <Text style={tw`p-10 font-bold`}>OfferScreen</Text>

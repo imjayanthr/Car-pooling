@@ -8,7 +8,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import OfferScreen from './screens/OfferScreen';
 import PassengerScreen from './screens/PassengerScreen';
-import AvailableRidesScreen from './screens/RideAvailableScreen';
+import RideAvailableScreen from './screens/RideAvailableScreen';
+import RideDetailsScreen from './screens/RideDetailsScreen';
+import SignInScreen from './screens/SignInScreen';
+import SignUpScreen from './screens/SignUpScreeen';
 export default function App() {
   const Stack= createNativeStackNavigator();
   return (
@@ -17,6 +20,17 @@ export default function App() {
     <NavigationContainer>
       <SafeAreaProvider>
         <Stack.Navigator>
+        <Stack.Screen 
+          name="SignInScreen" 
+          component={SignInScreen} 
+          options={{
+            headerShown:false
+          }}/><Stack.Screen 
+          name="SignUpScreen" 
+          component={SignUpScreen} 
+          options={{
+            headerShown:false
+          }}/>
           <Stack.Screen 
           name="HomeScreen" 
           component={HomeScreen} 
@@ -36,9 +50,17 @@ export default function App() {
           options={{
             headerShown:false
           }}
-          /><Stack.Screen 
-          name="AvailableRidesScreen" 
-          component={AvailableRidesScreen} 
+          />
+          <Stack.Screen 
+          name="RideAvailableScreen" 
+          component={RideAvailableScreen} 
+          options={{
+            headerShown:false
+          }}
+          />
+          <Stack.Screen 
+          name="RideDetailsScreen" 
+          component={RideDetailsScreen} 
           options={{
             headerShown:false
           }}
