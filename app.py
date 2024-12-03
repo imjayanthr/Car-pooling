@@ -221,6 +221,86 @@ def create_ride():
 
     return jsonify({"message": "Ride created successfully!"}), 201
 
+@app.route('/rides', methods=['GET'])
+def get_filtered_rides():
+    source = request.args.get('source')
+    destination = request.args.get('destination')
+
+    if not source or not destination:
+        return jsonify({"error": "Source and destination are required"}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            '''
+            SELECT Rides.ride_id, Rides.origin, Rides.destination, Rides.departure_time, 
+                   Rides.available_seats, Users.name AS driver_name
+            FROM Rides
+            JOIN Users ON Rides.user_id = Users.user_id
+            WHERE Rides.origin LIKE ? AND Rides.destination LIKE ?
+            ''',
+            (f"%{source}%", f"%{destination}%")  # Support partial matching
+        )
+        rides = cursor.fetchall()
+        conn.close()
+
+        # Format rides for JSON response
+        ride_list = [
+            {
+                "ride_id": ride["ride_id"],
+                "origin": ride["origin"],
+                "destination": ride["destination"],
+                "departure_time": ride["departure_time"],
+                "available_seats": ride["available_seats"],
+                "driver_name": ride["driver_name"],
+            }
+            for ride in rides
+        ]
+
+        return jsonify({"rides": ride_list}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/book', methods=['POST'])
+def book_ride():
+    data = request.get_json()
+    user_id = data.get('user_id')  # This could come from the app's logged-in user context
+    ride_id = data.get('ride_id')
+    seats = data.get('available_seats')
+
+    if not user_id or not ride_id or not seats:
+        return jsonify({"error": "User ID, Ride ID, and number of seats are required"}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if seats are available
+        cursor.execute(
+            "SELECT available_seats FROM Rides WHERE ride_id = ?", (ride_id,)
+        )
+        ride = cursor.fetchone()
+        if not ride or ride['available_seats'] < seats:
+            return jsonify({"error": "Not enough seats available"}), 400
+
+        # Update seats and insert booking
+        cursor.execute(
+            "UPDATE Rides SET available_seats = available_seats - ? WHERE ride_id = ?",
+            (seats, ride_id),
+        )
+        cursor.execute(
+            "INSERT INTO RidePassengers (user_id, ride_id, available_seats) VALUES (?, ?, ?)",
+            (user_id, ride_id, seats),
+        )
+        conn.commit()
+        conn.close()
+
+        return jsonify({"message": "Booking confirmed"}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Update ride details   curl -X PUT http://127.0.0.1:5000/rides/update/1 -H "Content-Type: application/json" -d "{\"origin\": \"City C\", \"destination\": \"City D\", \"departure_time\": \"2024-08-31 12:00:00\", \"available_seats\": 4, \"price\": 30.00}"
 @app.route('/rides/update/<int:ride_id>', methods=['PUT'])
@@ -322,48 +402,48 @@ def get_ride_details(ride_id):
 
 #curl -X POST http://127.0.0.1:5000/rides/book/2 -H "Content-Type: application/json" -d "{\"user_id\": 2}"
 
-@app.route('/rides/book/<int:ride_id>', methods=['POST'])
-def book_ride(ride_id):
-    data = request.get_json()
-    user_id = data.get('user_id')
+# @app.route('/rides/book/<int:ride_id>', methods=['POST'])
+# def book_ride(ride_id):
+#     data = request.get_json()
+#     user_id = data.get('user_id')
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+#     conn = get_db_connection()
+#     cursor = conn.cursor()
 
-    # Check if the ride exists
-    cursor.execute('SELECT available_seats FROM Rides WHERE ride_id = ?', (ride_id,))
-    ride = cursor.fetchone()
+#     # Check if the ride exists
+#     cursor.execute('SELECT available_seats FROM Rides WHERE ride_id = ?', (ride_id,))
+#     ride = cursor.fetchone()
 
-    if ride is None:
-        conn.close()
-        return jsonify({"error": "Ride not found"}), 404
+#     if ride is None:
+#         conn.close()
+#         return jsonify({"error": "Ride not found"}), 404
 
-    available_seats = ride['available_seats']
+#     available_seats = ride['available_seats']
     
-    # Check if there are available seats
-    if available_seats <= 0:
-        conn.close()
-        return jsonify({"error": "No available seats"}), 400
+#     # Check if there are available seats
+#     if available_seats <= 0:
+#         conn.close()
+#         return jsonify({"error": "No available seats"}), 400
 
-    # Check if the user has already booked the ride
-    cursor.execute('SELECT * FROM RidePassengers WHERE ride_id = ? AND user_id = ?', (ride_id, user_id))
-    existing_booking = cursor.fetchone()
+#     # Check if the user has already booked the ride
+#     cursor.execute('SELECT * FROM RidePassengers WHERE ride_id = ? AND user_id = ?', (ride_id, user_id))
+#     existing_booking = cursor.fetchone()
 
-    if existing_booking:
-        conn.close()
-        return jsonify({"error": "User has already booked this ride"}), 400
+#     if existing_booking:
+#         conn.close()
+#         return jsonify({"error": "User has already booked this ride"}), 400
 
-    # Book the ride by inserting into RidePassengers table
-    cursor.execute('INSERT INTO RidePassengers (ride_id, user_id, booking_status) VALUES (?, ?, ?)',
-                   (ride_id, user_id, 'confirmed'))
+#     # Book the ride by inserting into RidePassengers table
+#     cursor.execute('INSERT INTO RidePassengers (ride_id, user_id, booking_status) VALUES (?, ?, ?)',
+#                    (ride_id, user_id, 'confirmed'))
     
-    # Decrease the number of available seats
-    cursor.execute('UPDATE Rides SET available_seats = available_seats - 1 WHERE ride_id = ?', (ride_id,))
+#     # Decrease the number of available seats
+#     cursor.execute('UPDATE Rides SET available_seats = available_seats - 1 WHERE ride_id = ?', (ride_id,))
     
-    conn.commit()
-    conn.close()
+#     conn.commit()
+#     conn.close()
 
-    return jsonify({"message": "Ride booked successfully!"}), 200
+#     return jsonify({"message": "Ride booked successfully!"}), 200
 
 
 #curl -X DELETE http://127.0.0.1:5000/rides/2/cancel -H "Content-Type: application/json" -d "{\"user_id\": 2}"

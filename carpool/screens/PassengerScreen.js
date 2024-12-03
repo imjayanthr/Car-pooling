@@ -1,149 +1,107 @@
-import { View, Text, Button, Platform,TextInput } from 'react-native';
 import React, { useState } from 'react';
-import tw from 'tailwind-react-native-classnames';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import { useNavigation } from '@react-navigation/native'
+import { View, Text, TextInput, Button, FlatList, Alert } from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const PassengerScreen = () => {
+  const [source, setSource] = useState('');
+  const [destination, setDestination] = useState('');
+  const [rides, setRides] = useState([]);
+  const [selectedRide, setSelectedRide] = useState(null); // Store selected ride
+  const [available_seats, setSeats] = useState(''); // Number of seats to book
 
+  const fetchRides = async () => {
+    try {
+      const response = await axios.get('http://192.168.1.48:5000/rides', {
+        params: { source, destination },
+      });
+      setRides(response.data.rides);
+    } catch (error) {
+      Alert.alert('Error', error.response?.data?.error || 'Something went wrong!');
+    }
+  };
 
-    const PassengerScreen = () => {
-     const navigation = useNavigation();
+  const handleRideSelect = (ride) => {
+    setSelectedRide(ride);
+  };
 
-        // States for date and time
-        const [date, setDate] = useState(new Date()); // Current date
-        const [time, setTime] = useState(new Date()); // Current time
-        const [showDatePicker, setShowDatePicker] = useState(false); // To show/hide the DatePicker
-        const [showTimePicker, setShowTimePicker] = useState(false); // To show/hide the TimePicker
-        const [seatsAvailable, setSeatsAvailable] = useState(''); // State to store the number of seats
-        const [source,setsource]=useState("");
-        const [destination,setdestination]=useState("");
-      
-        const onChangeDate = (event, selectedDate) => {
-          const currentDate = selectedDate || date;
-          setShowDatePicker(Platform.OS === 'ios'); // Hide on Android after selection
-          setDate(currentDate); // Set the selected date
-        };
-      
-        const onChangeTime = (event, selectedTime) => {
-          const currentTime = selectedTime || time;
-          setShowTimePicker(Platform.OS === 'ios'); // Hide on Android after selection
-          setTime(currentTime); // Set the selected time
-        };
-        const showDatepicker = () => {
-          setShowDatePicker(true); // Show the date picker modal
-        };
-        const showTimepicker = () => {
-          setShowTimePicker(true); // Show the time picker modal
-        };
-        const handleSeatsChange = (input) => {
-              setSeatsAvailable(input); // Update state with the input value
-        };
-        const handleSetSource = (input) => {
-          setsource(input);
-        }
-        const handleSetDestination = (input) => {
-          setdestination(input);
-        }
-        const handleButtonPress = () => {
-          handleSubmit();
-          navigation.navigate('RideAvailableScreen'); // Replace 'TargetScreen' with your actual screen
-        };
-        const handleSubmit = () => {
-              // Here you can handle what to do with the seatsAvailable value
-              console.log('From :', source);
-              console.log('To :', destination);
-              console.log('Booked seat :', seatsAvailable);
-              console.log("date:",date.toLocaleDateString('en-US'));
-              console.log("time:",time.toLocaleTimeString('en-US'));
+  const confirmBooking = async () => {
+    if (!selectedRide || !available_seats) {
+      Alert.alert('Error', 'Please select a ride and specify the number of seats.');
+      return;
+    }
+    const user_id = await AsyncStorage.getItem('user_id');
 
-        };
-        return (
-          <View>
-            <Text style={tw`p-10 font-bold`}>OfferScreen</Text>
-      
-            {/* Google Places From Field */}
-            {/* <View style={tw`m-6 p-5`}>
-              <GooglePlacesAutocomplete
-                placeholder="From.."
-                onPress={(data, details = null) => {
-                  console.log(data, details); // Handle selection
-                }}
-                query={{
-                  key: 'YOUR API KEY',
-                  language: 'en',
-                }}
-              />
-            </View> */}
-            {/* Google Places To Field */}
-            {/* <View style={tw`m-6 p-5`}>
-              <GooglePlacesAutocomplete
-                placeholder="To.."
-                onPress={(data, details = null) => {
-                  console.log(data, details); // Handle selection
-                }}
-                query={{
-                  key: 'YOUR API KEY',
-                  language: 'en',
-                }}
-              />
-            </View> */}
-             <View >
-                  <TextInput
-                      placeholder="From.."
-                      value={source} // Bind input value to state
-                      onChangeText={handleSetSource} // Update state on text change
-                  />
-              </View>
-              <View >
-                  <TextInput
-                      placeholder="To.."
-                      value={destination} // Bind input value to state
-                      onChangeText={handleSetDestination} // Update state on text change
-                  />
-              </View>
-      
-            {/* Date and Time Pickers */}
-            <View style={{ padding: 20 }}>
-              {/* Date Picker */}
-              <Button onPress={showDatepicker} title="Select Date" />
-              {/* Ensure date is rendered inside a Text component */}
-              <Text>Date: {date ? date.toLocaleDateString('en-US') : ''}</Text> 
-              {showDatePicker && (
-                <DateTimePicker
-                  value={date}
-                  mode="date" // This is for picking a date
-                  display="default" // Android default display
-                  onChange={onChangeDate} // Callback when date is picked
-                />
-              )}
-      
-              {/* Time Picker */}
-              <Button onPress={showTimepicker} title="Select Time" />
-              {/* Ensure time is rendered inside a Text component */}
-              <Text>Time: {time ? time.toLocaleTimeString('en-US') : ''}</Text> 
-      
-              {showTimePicker && (
-                <DateTimePicker
-                  value={time}
-                  mode="time" // This is for picking a time
-                  display="default" // Android default display
-                  onChange={onChangeTime} // Callback when time is picked
-                />
-              )}
-            </View>
-            <View >
-                  <TextInput
-                      placeholder="Number of seats to be booked..."
-                      keyboardType="numeric" // Only allow numeric input
-                      value={seatsAvailable} // Bind input value to state
-                      onChangeText={handleSeatsChange} // Update state on text change
-                  />
-                  <Button title="Submit" onPress={handleButtonPress} /> 
-              </View>
+    try {
+      const response = await axios.post('http://192.168.1.48:5000/book', {
+      // Replace with logged-in user ID
+      user_id,
+        ride_id: selectedRide.ride_id,
+        available_seats: parseInt(available_seats),
+      });
+      Alert.alert('Success', response.data.message);
+      setSelectedRide(null); // Reset after booking
+      setSeats('');
+    } catch (error) {
+      Alert.alert('Error', error.response?.data?.error || 'Something went wrong!');
+    }
+  };
+
+  return (
+    <View>
+      <Text>Search Rides</Text>
+      <TextInput
+        placeholder="Source"
+        value={source}
+        onChangeText={setSource}
+        style={{ borderWidth: 1, margin: 10, padding: 5 }}
+      />
+      <TextInput
+        placeholder="Destination"
+        value={destination}
+        onChangeText={setDestination}
+        style={{ borderWidth: 1, margin: 10, padding: 5 }}
+      />
+      <Button title="Search" onPress={fetchRides} />
+
+      <FlatList
+        data={rides}
+        keyExtractor={(item) => item.ride_id.toString()}
+        renderItem={({ item }) => (
+          <View style={{ padding: 10, borderBottomWidth: 1 }}>
+            <Text>From: {item.origin}</Text>
+            <Text>To: {item.destination}</Text>
+            <Text>Time: {item.departure_time}</Text>
+            <Text>Seats Available: {item.available_seats}</Text>
+            <Text>Driver: {item.driver_name}</Text>
+            <Button
+              title="Select"
+              onPress={() => handleRideSelect(item)}
+              disabled={selectedRide?.ride_id === item.ride_id} // Disable button if already selected
+            />
           </View>
-        );
-      };
-      
-      export default PassengerScreen;
-      
+        )}
+      />
+
+      {selectedRide && (
+        <View style={{ padding: 20 }}>
+          <Text>Selected Ride:</Text>
+          <Text>From: {selectedRide.origin}</Text>
+          <Text>To: {selectedRide.destination}</Text>
+          <Text>Seats Available: {selectedRide.available_seats}</Text>
+
+          <TextInput
+            placeholder="Enter seats to book"
+            value={available_seats}
+            onChangeText={setSeats}
+            keyboardType="numeric"
+            style={{ borderWidth: 1, marginVertical: 10, padding: 5 }}
+          />
+          <Button title="Confirm Booking" onPress={confirmBooking} />
+        </View>
+      )}
+    </View>
+  );
+};
+
+export default PassengerScreen;
