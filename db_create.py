@@ -39,6 +39,7 @@ cursor.execute('''
 CREATE TABLE RidePassengers (
     ride_id INTEGER,
     user_id INTEGER,
+    available_seats INTEGER,           
     PRIMARY KEY (ride_id, user_id),
     FOREIGN KEY(ride_id) REFERENCES Rides(ride_id),
     FOREIGN KEY(user_id) REFERENCES Users(user_id)
